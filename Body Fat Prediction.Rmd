@@ -1,0 +1,193 @@
+---
+title: "Body Fat Prediction"
+author: "GS"
+date: "18/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, comment = "", warning = F, fig.align = "center")
+```
+
+#### Context
+
+Lists estimates of the percentage of body fat determined by underwater weighing and various body circumference measurements for 252 men.
+
+#### Content
+
+- The variables listed below, from left to right, are:
+- Density determined from underwater weighing
+- Percent body fat from Siri's (1956) equation
+- Age (years)
+- Weight (lbs)
+- Height (inches)
+- Neck circumference (cm)
+- Chest circumference (cm)
+- Abdomen 2 circumference (cm)
+- Hip circumference (cm)
+- Thigh circumference (cm)
+- Knee circumference (cm)
+- Ankle circumference (cm)
+- Biceps (extended) circumference (cm)
+- Forearm circumference (cm)
+- Wrist circumference (cm)
+
+(Measurement standards are apparently those listed in Benhke and Wilmore (1974), pp. 45-48 where, for instance, the abdomen 2 circumference is measured "laterally, at the level of the iliac crests, and anteriorly, at the umbilicus".)
+
+These data are used to produce the predictive equations for lean body weight given in the abstract "Generalized body composition prediction equation for men using simple measurement techniques", K.W. Penrose, A.G. Nelson, A.G. Fisher, FACSM, Human Performance Research Center, Brigham Young University, Provo, Utah 84602 as listed in Medicine and Science in Sports and Exercise, vol. 17, no. 2, April 1985, p. 189. (The predictive equation were obtained from the first 143 of the 252 cases that are listed below).
+
+
+[Link Kaggle](https://www.kaggle.com/fedesoriano/body-fat-prediction-dataset)
+
+```{r, packages}
+library(tidyverse)
+library(tidymodels)
+library(GGally)
+library(corrr)
+library(ggcorrplot)
+
+theme_set(theme_bw())
+```
+
+```{r, dataset}
+fat <- read_csv("bodyfat.csv")
+```
+### EDA
+
+```{r, str}
+sample_n(fat,5)
+dim(fat)
+```
+
+**Response variable: BodyFat**
+
+```{r, summary}
+summary(fat)
+# No NAs
+```
+```{r,lbs_to_metric}
+fat <- fat %>% 
+  mutate(Weight = round(Weight * 0.453592, digits = 2),
+         Height = round(Height * 2.54, digits = 2))
+```
+
+
+```{r, cache = T}
+ggpairs(fat) 
+```
+```{r, response}
+ggplot(fat, aes(BodyFat)) + 
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of response variable",
+       subtitle = "BodyFat",
+       x = "Body Fat",
+       y = "Density")
+```
+
+```{r, normality}
+shapiro.test(fat$BodyFat) # normally distributed
+  
+p_val <-  NULL
+for(i in 1:ncol(fat)){
+  p_val[i] = map(fat, shapiro.test)[[i]]$p.value
+}
+
+p_val <- tibble(variable = colnames(fat),
+                p_val = round(p_val, 4))
+
+p_val
+```
+
+
+```{r, correlation}
+(corel <- cor(fat) %>% round(., 2))
+
+ggcorrplot(corel,
+           method = "square",
+           type = "lower",
+           lab = T,
+           hc.order = T)
+
+correlate(fat) %>% 
+  network_plot()
+```
+
+```{r, cluster analysis}
+fat_norm <- scale(fat)
+
+distance <- dist(fat_norm, method = "euclidean")
+cluster <- hclust(distance, method = "complete")
+
+plot(cluster)
+```
+```{r, pca}
+
+library(factoextra)
+pca <- prcomp(fat, scale. = T)
+pca
+summary(pca)
+
+fviz_eig(pca, addlabels = T)
+
+fviz_pca_var(pca,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+             )
+
+```
+
+## Initals models (exploratory)
+
+```{r, raw_lineal_model}
+raw_lineal_model <- lm(BodyFat ~ ., data = fat)
+summary(raw_lineal_model)
+```
+```{r, multicol}
+car::vif(raw_lineal_model)
+# I will remove values above 5
+```
+
+```{r, feauture_selection_subset}
+library(leaps)
+
+subset_lineal_model <- regsubsets(BodyFat ~ ., data = fat, nvmax = 14)
+summary(subset_lineal_model)
+```
+
+
+```{r, feauture_selection_subset_metrics}
+res.sum <- summary(subset_lineal_model)
+tibble(Adj.R2 = which.max(res.sum$adjr2),
+           CP = which.min(res.sum$cp),
+           BIC = which.min(res.sum$bic)
+           )
+```
+
+```{r, feature_selection_stepwise}
+library(MASS)
+
+stepwise_lineal_model <- stepAIC(raw_lineal_model, direction = "both", trace = F)
+summary(stepwise_lineal_model)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
