@@ -45,6 +45,8 @@ library(tidymodels)
 library(GGally)
 library(corrr)
 library(ggcorrplot)
+library(ggExtra) # marginal plots
+library(gridExtra)
 
 theme_set(theme_bw())
 ```
@@ -65,18 +67,200 @@ dim(fat)
 summary(fat)
 # No NAs
 ```
+
+
 ```{r,lbs_to_metric}
 fat <- fat %>% 
   mutate(Weight = round(Weight * 0.453592, digits = 2),
          Height = round(Height * 2.54, digits = 2))
 ```
 
-
 ```{r, cache = T}
 ggpairs(fat) 
 ```
-```{r, response}
-ggplot(fat, aes(BodyFat)) + 
+
+```{r, outliers detection}
+fat %>% 
+  filter(BodyFat == 0)
+  
+fat %>% 
+  filter(Height == 74.93)
+
+density <- ggplot(fat, aes(Density)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Density variable",
+       x = "Density",
+       y = "Density")
+
+p1 <- ggMarginal(density, type = "boxplot", margins = "x")
+
+
+age <- ggplot(fat, aes(Age)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Age variable",
+       x = "Age",
+       y = "Density")
+
+p3 <- ggMarginal(age, type = "boxplot", margins = "x")
+
+
+weight <- ggplot(fat, aes(Weight)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Weight variable",
+       x = "Age",
+       y = "Density")
+
+p4 <- ggMarginal(weight, type = "boxplot", margins = "x")
+
+height <- ggplot(fat, aes(Height)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Height variable",
+       x = "Height",
+       y = "Density")
+
+p5 <- ggMarginal(height, type = "boxplot", margins = "x")
+
+
+neck <- ggplot(fat, aes(Neck)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Neck variable",
+       x = "Neck",
+       y = "Density")
+
+p6 <- ggMarginal(neck, type = "boxplot", margins = "x")
+
+
+chest <- ggplot(fat, aes(Chest)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Chest variable",
+       x = "Chest",
+       y = "Density")
+
+p7 <- ggMarginal(chest, type = "boxplot", margins = "x")
+
+
+abdomen <- ggplot(fat, aes(Abdomen)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Abdomen variable",
+       x = "Abdomen",
+       y = "Density")
+
+p8 <- ggMarginal(abdomen, type = "boxplot", margins = "x")
+
+
+hip <- ggplot(fat, aes(Hip)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Hip variable",
+       x = "Hip",
+       y = "Density")
+
+p9 <- ggMarginal(hip, type = "boxplot", margins = "x")
+
+
+thigh <- ggplot(fat, aes(Thigh)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Thigh variable",
+       x = "Hip",
+       y = "Density")
+
+p10 <- ggMarginal(thigh, type = "boxplot", margins = "x")
+
+
+knee <- ggplot(fat, aes(Knee)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Knee variable",
+       x = "Hip",
+       y = "Density")
+
+p11 <- ggMarginal(knee, type = "boxplot", margins = "x")
+
+
+ankle <- ggplot(fat, aes(Ankle)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Ankle variable",
+       x = "Hip",
+       y = "Density")
+
+p12 <- ggMarginal(ankle, type = "boxplot", margins = "x")
+
+
+biceps <- ggplot(fat, aes(Biceps)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Biceps variable",
+       x = "Hip",
+       y = "Density")
+
+p13 <- ggMarginal(biceps, type = "boxplot", margins = "x")
+
+
+forearm <- ggplot(fat, aes(Forearm)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Forearm variable",
+       x = "Forearm",
+       y = "Density")
+
+p14 <- ggMarginal(forearm, type = "boxplot", margins = "x")
+
+
+wrist <- ggplot(fat, aes(Wrist)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
+  geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
+  geom_density() + 
+  geom_rug(color = "blue") + 
+  labs(title = "Distribution of Wrist variable",
+       x = "Wrist",
+       y = "Density")
+
+p15 <- ggMarginal(wrist, type = "boxplot", margins = "x")
+
+
+grid.arrange(p1, p3, p4, p5)
+grid.arrange(p6, p7, p8, p9)
+grid.arrange(p10, p11, p12, p13)
+grid.arrange(p14, p15)
+
+# Response variable
+response <- ggplot(fat, aes(BodyFat)) + 
+  geom_point(aes(y = 0.01), alpha = 0) + # solo para ggMarginal
   geom_histogram(aes(y = ..density..), bins = sqrt(nrow(fat)), fill = "lightblue", color = "blue") + 
   geom_density() + 
   geom_rug(color = "blue") + 
@@ -84,6 +268,8 @@ ggplot(fat, aes(BodyFat)) +
        subtitle = "BodyFat",
        x = "Body Fat",
        y = "Density")
+
+ggMarginal(response, type = "boxplot", margins = "x")
 ```
 
 ```{r, normality}
@@ -95,20 +281,58 @@ for(i in 1:ncol(fat)){
 }
 
 p_val <- tibble(variable = colnames(fat),
-                p_val = round(p_val, 4))
+                p_val = round(p_val, 4),
+                distribution = if_else(p_val >= 0.05, "Normal", "Non normal"))
 
 p_val
 ```
 
 
+```{r, outlier removal}
+fat <- fat %>%
+    filter(if_all(where(is.numeric), ~ (.>= (quantile(., .25) - IQR(.) * 1.5 )) &
+           (.<= (quantile(., .75) + IQR(.) * 1.5 ))))
+
+
+#One implausibel value is BodyFat = 0 which it was not detetc as outlier by IQR*1.5 method
+# I delete manually
+
+fat <- fat %>% 
+  filter(BodyFat >= 2)
+
+summary(fat)
+```
+
+
+```{r, normality_wo_outliers}
+shapiro.test(fat$BodyFat) # normally distributed
+  
+pp_val <-  NULL
+for(i in 1:ncol(fat)){
+  pp_val[i] = map(fat, shapiro.test)[[i]]$p.value
+}
+
+pp_val <- tibble(variable = colnames(fat),
+                pp_val = round(pp_val, 4),
+                distribution = if_else(pp_val >= 0.05, "Normal", "Non normal"))
+
+pp_val
+```
+
 ```{r, correlation}
 (corel <- cor(fat) %>% round(., 2))
 
+p.mat <- cor_pmat(fat)
 ggcorrplot(corel,
            method = "square",
            type = "lower",
            lab = T,
-           hc.order = T)
+           lab_size = 3,
+           p.mat = p.mat,
+           hc.order = T,
+           colors = c("#6D9EC1", "white", "#E46726"))
+
+cor.test(fat$Weight, fat$Abdomen)
 
 correlate(fat) %>% 
   network_plot()
