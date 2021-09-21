@@ -47,6 +47,7 @@ library(corrr)
 library(ggcorrplot)
 library(ggExtra) # marginal plots
 library(gridExtra)
+library(wesanderson)
 
 theme_set(theme_bw())
 ```
@@ -79,7 +80,7 @@ fat <- fat %>%
 ggpairs(fat) 
 ```
 
-```{r, outliers detection}
+```{r, outliers detection, echo = F}
 fat %>% 
   filter(BodyFat == 0)
   
@@ -318,6 +319,66 @@ pp_val <- tibble(variable = colnames(fat),
 
 pp_val
 ```
+```{r, uni_analysis}
+r.sq <- fat %>% 
+  dplyr::select(-BodyFat) %>%  # exclude outcome, leave only predictors 
+  map(~lm(fat$BodyFat ~ .x, data = fat)) %>% 
+  map(summary) %>%
+  map_dbl("r.squared")
+
+
+p.val <- fat %>% 
+  dplyr::select(-BodyFat) %>%  # exclude outcome, leave only predictors 
+  map(~lm(fat$BodyFat ~ .x, data = fat)) %>% 
+  map(summary) %>% 
+  map(c("coefficients")) %>% 
+  map_dbl(8)
+
+
+estimate <- fat %>% 
+  dplyr::select(-BodyFat) %>%  # exclude outcome, leave only predictors 
+  map(~lm(fat$BodyFat ~ .x, data = fat)) %>% 
+  map(summary) %>% 
+  map(c("coefficients")) %>% 
+  map_dbl(2)  
+
+
+l_ci <- fat %>% 
+  dplyr::select(-BodyFat) %>%  # exclude outcome, leave only predictors 
+  map(~lm(fat$BodyFat ~ .x, data = fat)) %>% 
+  map(confint) %>% 
+  map_dbl(2)
+
+
+u_ci <- fat %>% 
+  dplyr::select(-BodyFat) %>%  # exclude outcome, leave only predictors 
+  map(~lm(fat$BodyFat ~ .x, data = fat)) %>% 
+  map(confint) %>% 
+  map_dbl(4)
+
+vars <- names(fat[,c(1,3,4,5,6,7,8,9,10,11,12,13,14,15)])
+
+plot_fat <- data.frame(vars, estimate, l_ci, u_ci, p.val)
+row.names(plot_fat) <- NULL
+plot_fat$vars <- as.factor(plot_fat$vars)
+
+knitr::kable(plot_fat)
+plot_fat
+
+confint_plt <- plot_fat %>%
+  filter(vars != "Density") %>% 
+  ggplot(aes(x = vars, y = estimate)) +
+  geom_errorbar(aes(ymax = u_ci, ymin = l_ci), color = wes_palette("Rushmore1")[3]) +
+  geom_point(color = wes_palette("Royal1")[2], size = 2) +
+  geom_hline(yintercept = 0, linetype = "dashed", alpha = 0.5) +
+  theme_minimal() +
+  coord_flip() +
+  labs(title = "Coefficients from Univariate Linear Models",
+       subtitle = "Density was exclude due to scale",
+       x = "",
+       y = "")  
+confint_plt
+```
 
 ```{r, correlation}
 (corel <- cor(fat) %>% round(., 2))
@@ -397,6 +458,18 @@ stepwise_lineal_model <- stepAIC(raw_lineal_model, direction = "both", trace = F
 summary(stepwise_lineal_model)
 ```
 
+```{r, splitting}
+set.seed(2021)
+split_fat <- initial_split(fat, prop = .75, strata = BodyFat)
+fat_train <- training(split_fat)
+fat_test <- testing(split_fat)
+
+```
+```{r, cv}
+set.seed(2021)
+fat_cv <- vfold_cv(fat_train, v = 5)
+
+```
 
 
 
