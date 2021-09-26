@@ -429,6 +429,7 @@ fviz_pca_var(pca,
 ```{r, raw_lineal_model}
 raw_lineal_model <- lm(BodyFat ~ ., data = fat)
 summary(raw_lineal_model)
+plot(raw_lineal_model)
 ```
 ```{r, multicol}
 car::vif(raw_lineal_model)
@@ -467,14 +468,144 @@ fat_test <- testing(split_fat)
 ```
 ```{r, cv}
 set.seed(2021)
-fat_cv <- vfold_cv(fat_train, v = 5)
+fat_cv <- vfold_cv(fat_train, v = 10)
 
+```
+
+Basic Linear Rregression
+
+```{r, lm_basic}
+lm_model <- linear_reg() %>% 
+  set_engine("lm")
+
+lm_basic_rec <- 
+  recipe(BodyFat ~ ., data = fat_train )
+
+lm_basic_wf <- 
+  workflow() %>% 
+  add_model(lm_model) %>% 
+  add_recipe(lm_basic_rec)
+```
+
+```{r, fit_lm_basic}
+set.seed(2021)
+fit_lm_basic <- fit_resamples(
+  lm_basic_wf,
+  resamples = fat_cv,
+  control = control_resamples(save_pred = T)
+  )
+```
+```{r, pred_lm_basic}
+fit_lm_basic$.predictions
+fit_lm_basic %>% collect_metrics()
+fit_lm_basic %>% augment() 
+```
+
+Preprocessed Linear Model
+
+```{r}
+lm_prepro_rec <- 
+  recipe(BodyFat ~ ., data = fat_train) %>% 
+  step_normalize(all_numeric_predictors()) %>% 
+  step_lincomb(all_numeric_predictors()) %>% 
+  step_pca(all_numeric_predictors(), num_comp = 4)
+
+lm_prepro_rec %>% prep() %>% juice()
+
+lm_prepro_wf <- 
+  workflow() %>% 
+  add_model(lm_model) %>% 
+  add_recipe(lm_prepro_rec)
+```
+```{r}
+set.seed(2021)
+fit_lm_prepro <- fit_resamples(
+  lm_prepro_wf,
+  resamples = fat_cv,
+  control = control_resamples(save_pred = T)
+)
+
+```
+```{r, pred_lm_prepro}
+fit_lm_prepro$.predictions
+fit_lm_prepro %>% collect_metrics()
+fit_lm_prepro %>% augment() 
 ```
 
 
 
 
+Penalized Model
 
+```{r, penalized model}
+penal_model <-
+  linear_reg(penalty = tune(), mixture = tune()) %>%
+  set_engine('glmnet')
+
+penal_rec <- lm_basic_rec
+
+penal_wf <- 
+  workflow() %>% 
+  add_model(penal_model) %>% 
+  add_recipe(penal_rec)
+
+penal_wf %>% parameters()
+penal_wf %>% parameters() %>% pull_dials_object("penalty")
+penal_wf %>% parameters() %>% pull_dials_object("mixture")
+```
+```{r, cache= TRUE}
+reg_metric <- metric_set(rsq, rmse)
+keep_pred <- control_resamples(save_pred = TRUE, save_workflow = TRUE)
+
+set.seed(2021)
+
+penal_tuning <- 
+  tune_grid(
+    penal_wf,
+    resamples = fat_cv,
+    grid = 20,
+    metrics = reg_metric,
+    control = keep_pred
+  )
+
+penal_tuning
+```
+
+```{r, penal_metrics}
+penal_tuning %>% collect_metrics()
+penal_tuning %>% collect_predictions()
+penal_tuning %>% show_best(metric = "rmse")
+penal_tuning %>% show_best(metric = "rsq")
+penal_tuning %>% select_best(metric = "rmse")
+
+autoplot(penal_tuning) + theme(legend.position = "top")
+```
+
+```{r, penal_final}
+best_penal_model <- 
+  penal_tuning %>% 
+  select_best(metric = "rmse")
+
+last_penal_wf <- 
+  penal_wf %>% 
+  finalize_workflow(best_penal_model)
+
+last_penal_wf
+```
+```{r applying last model}
+penal_fit <- 
+  last_fit(
+    last_penal_wf,
+    split = split_fat
+  )
+
+penal_fit
+```
+```{r penal fitted metrics}
+penal_fit %>% collect_metrics()
+penal_pred <- penal_fit %>% collect_predictions()
+penal_pred
+```
 
 
 
